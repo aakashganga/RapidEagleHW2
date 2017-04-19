@@ -1,5 +1,5 @@
 ---
-title: "Rapid Eagle HW2"
+title: "Rapid Eagle HW2 Exercise I"
 output: html_notebook
 ---
 
@@ -24,10 +24,10 @@ Clean up the 'company' column so all of the misspellings of the brand names are 
 
 ## Option 1: Use REGEX
 ```{r}
-refine$Company <- gsub("^[Pp].*|^[Ff].*", "philips", refine$Company)
-refine$Company <- gsub("^[Aa].*", "akzo", refine$Company)
-refine$Company <- gsub("^[Vv].*", "van houten", refine$Company)
-refine$Company <- gsub("^[Uu].*", "unilever", refine$Company)
+refine$company <- gsub("^[Pp].*|^[Ff].*", "philips", refine$company)
+refine$company <- gsub("^[Aa].*", "akzo", refine$company)
+refine$company <- gsub("^[Vv].*", "van houten", refine$company)
+refine$company <- gsub("^[Uu].*", "unilever", refine$company)
 ```
 
 ## Option 2: Use stringdist library
@@ -54,12 +54,6 @@ brandName <- c( "philips", "akzo", "van houten",  "unilever")
 refine$company <- sapply(refine$company, closeMatch, y = brandName)
 ```
 
-## Option 3: use dplyr: inner join
-
-```{r}
-
-```
-
 
 # 2: Separate product code and number
 ```{r}
@@ -83,10 +77,8 @@ refine <- inner_join(refine, prodCatLookup)
 
 This makes a messy implementation. Avoid using sequential ifelses.
 ```{r}
-refine$Productcategory = with(refine,ifelse(Productcategory=="p","Smartphone",
-                                            ifelse(Productcategory=="v","TV",
-                                                   ifelse(Productcategory=="x","Laptop",
-                                                          ifelse(Productcategory=="q","Tablet","Unknown")))))
+refine$Productcategory = with(refine,ifelse(Productcode=="p","Smartphone",
+                        ifelse(Productcode=="v","TV",                                                   ifelse(Productcode=="x","Laptop",                                               ifelse(Productcode=="q","Tablet","Unknown")))))
 ```
 
 # 4: Add full address for geocoding
@@ -111,13 +103,39 @@ refine$company_philips = with(refine, ifelse(company=="philips",1,0))
 refine$company_akzo = with(refine, ifelse(company=="akzo",1,0))
 refine$company_van_houten = with(refine, ifelse(company=="van houten",1,0))
 refine$company_unilever = with(refine, ifelse(company=="unilever",1,0))
+
+refine$product_smartphone = with(refine,ifelse(Productcategory=="smartphone",1,0))
+refine$product_tv = with(refine,ifelse(Productcategory=="tv",1,0))
+refine$product_laptop = with(refine,ifelse(Productcategory=="laptop",1,0))
+refine$product_tablet = with(refine,ifelse(Productcategory=="tablet",1,0))
 ```
+
 
 ## Option 2: use a combination of dplyr::mutate and tidyr::spread
 ```{r}
 refine$company_changed <- paste0("company_",gsub(" ", "_",refine$company))
 refine <- refine %>% mutate(flag=1) %>% spread(key = company_changed,value = flag,fill = 0)
+
+refine$Productcategory_changed <- paste0("product_",gsub(" ", "_",refine$Productcategory))
+refine <- refine %>% mutate(flag=1) %>% spread(key = Productcategory_changed,value = flag,fill = 0)
 ```
 
+## Option 3: Use dummies package
+```{r}
+library(dummies)
+company <- gsub(" ", "_",refine$company)
+dummy1 <- dummy(company, sep = "_")
+refine <- cbind(refine, dummy1)
+
+Product <- gsub(" ", "_",refine$Productcategory)
+dummy2 <- dummy(Product, sep = "_")
+refine <- cbind(refine, dummy2)
+```
+
+Write changed csv
+
+```{r}
+write.csv(refine,"refine_changed.csv")
+```
 
 
